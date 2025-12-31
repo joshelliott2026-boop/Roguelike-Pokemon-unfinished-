@@ -11,15 +11,42 @@ const typeChart = {
   Psychic: { weak: ['Bug', 'Ghost', 'Dark'], resist: ['Fighting', 'Psychic'] },
 };
 
+const moveDex = {
+  Tackle: { power: 40, type: 'Normal', accuracy: 100 },
+  Scratch: { power: 40, type: 'Normal', accuracy: 100 },
+  Ember: { power: 40, type: 'Fire', accuracy: 100 },
+  WaterGun: { power: 40, type: 'Water', accuracy: 100 },
+  VineWhip: { power: 45, type: 'Grass', accuracy: 100 },
+  ThunderShock: { power: 40, type: 'Electric', accuracy: 100 },
+  QuickAttack: { power: 40, type: 'Normal', accuracy: 100 },
+  Bite: { power: 60, type: 'Dark', accuracy: 100 },
+  Confusion: { power: 50, type: 'Psychic', accuracy: 100 },
+  RockThrow: { power: 50, type: 'Rock', accuracy: 90 },
+  Gust: { power: 40, type: 'Flying', accuracy: 100 },
+  BugBite: { power: 60, type: 'Bug', accuracy: 100 }
+};
+
 const starterPool = [
-  { id: 1, name: 'Bulbasaur', type: 'Grass', hp: 45, attack: 49, defense: 49, speed: 45, color: '#78C850', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png' },
-  { id: 4, name: 'Charmander', type: 'Fire', hp: 39, attack: 52, defense: 43, speed: 65, color: '#F08030', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png' },
-  { id: 7, name: 'Squirtle', type: 'Water', hp: 44, attack: 48, defense: 65, speed: 43, color: '#6890F0', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png' },
-  { id: 25, name: 'Pikachu', type: 'Electric', hp: 35, attack: 55, defense: 40, speed: 90, color: '#F8D030', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png' },
-  { id: 133, name: 'Eevee', type: 'Normal', hp: 55, attack: 55, defense: 50, speed: 55, color: '#A8A878', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png' },
-  { id: 104, name: 'Cubone', type: 'Ground', hp: 50, attack: 50, defense: 95, speed: 35, color: '#E0C068', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/104.png' },
-  { id: 54, name: 'Psyduck', type: 'Water', hp: 50, attack: 52, defense: 48, speed: 55, color: '#6890F0', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/54.png' },
-  { id: 37, name: 'Vulpix', type: 'Fire', hp: 38, attack: 41, defense: 40, speed: 65, color: '#F08030', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/37.png' },
+  { id: 1, name: 'Bulbasaur', type: 'Grass', hp: 45, attack: 49, defense: 49, speed: 45, color: '#78C850',
+    sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png',
+    moves: ['Tackle', 'VineWhip', 'QuickAttack', 'Bite']
+  },
+  { id: 4, name: 'Charmander', type: 'Fire', hp: 39, attack: 52, defense: 43, speed: 65, color: '#F08030',
+    sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png',
+    moves: ['Scratch', 'Ember', 'QuickAttack', 'Bite']
+  },
+  { id: 7, name: 'Squirtle', type: 'Water', hp: 44, attack: 48, defense: 65, speed: 43, color: '#6890F0',
+    sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png',
+    moves: ['Tackle', 'WaterGun', 'Bite', 'QuickAttack']
+  },
+  { id: 25, name: 'Pikachu', type: 'Electric', hp: 35, attack: 55, defense: 40, speed: 90, color: '#F8D030',
+    sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png',
+    moves: ['QuickAttack', 'ThunderShock', 'Bite', 'Tackle']
+  },
+  { id: 133, name: 'Eevee', type: 'Normal', hp: 55, attack: 55, defense: 50, speed: 55, color: '#A8A878',
+    sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png',
+    moves: ['Tackle', 'QuickAttack', 'Bite', 'Scratch']
+  }
 ];
 
 const skillTree = [
@@ -32,12 +59,129 @@ const skillTree = [
 ];
 
 const battleSequence = [
-  { npc: 'Youngster Joey', pokemon: [{ id: 19, name: 'Rattata', type: 'Normal', hp: 30, attack: 35, defense: 25, speed: 40, color: '#A8A878', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/19.png' }] },
-  { npc: 'Bug Catcher', pokemon: [{ id: 10, name: 'Caterpie', type: 'Bug', hp: 28, attack: 30, defense: 25, speed: 30, color: '#A8B820', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10.png' }, { id: 13, name: 'Weedle', type: 'Bug', hp: 28, attack: 30, defense: 25, speed: 30, color: '#A8B820', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/13.png' }] },
-  { npc: 'Lass', pokemon: [{ id: 16, name: 'Pidgey', type: 'Flying', hp: 35, attack: 38, defense: 30, speed: 45, color: '#A890F0', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/16.png' }] },
-  { npc: 'Brock', pokemon: [{ id: 74, name: 'Geodude', type: 'Rock', hp: 40, attack: 55, defense: 65, speed: 25, color: '#B8A038', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/74.png' }, { id: 95, name: 'Onix', type: 'Rock', hp: 45, attack: 60, defense: 85, speed: 30, color: '#B8A038', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/95.png' }] },
-  { npc: 'Misty', pokemon: [{ id: 120, name: 'Staryu', type: 'Water', hp: 42, attack: 45, defense: 50, speed: 60, color: '#6890F0', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/120.png' }, { id: 121, name: 'Starmie', type: 'Water', hp: 60, attack: 75, defense: 65, speed: 85, color: '#6890F0', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/121.png' }] },
+  {
+    npc: 'Youngster Joey',
+    pokemon: [
+      {
+        id: 19,
+        name: 'Rattata',
+        type: 'Normal',
+        hp: 30,
+        attack: 35,
+        defense: 25,
+        speed: 40,
+        color: '#A8A878',
+        sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/19.png',
+        moves: ['Tackle', 'QuickAttack', 'Bite']
+      }
+    ]
+  },
+  {
+    npc: 'Bug Catcher',
+    pokemon: [
+      {
+        id: 10,
+        name: 'Caterpie',
+        type: 'Bug',
+        hp: 28,
+        attack: 30,
+        defense: 25,
+        speed: 30,
+        color: '#A8B820',
+        sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10.png',
+        moves: ['Tackle', 'BugBite']
+      },
+      {
+        id: 13,
+        name: 'Weedle',
+        type: 'Bug',
+        hp: 28,
+        attack: 30,
+        defense: 25,
+        speed: 30,
+        color: '#A8B820',
+        sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/13.png',
+        moves: ['Tackle', 'BugBite']
+      }
+    ]
+  },
+  {
+    npc: 'Lass',
+    pokemon: [
+      {
+        id: 16,
+        name: 'Pidgey',
+        type: 'Flying',
+        hp: 35,
+        attack: 38,
+        defense: 30,
+        speed: 45,
+        color: '#A890F0',
+        sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/16.png',
+        moves: ['Tackle', 'Gust', 'QuickAttack']
+      }
+    ]
+  },
+  {
+    npc: 'Brock',
+    pokemon: [
+      {
+        id: 74,
+        name: 'Geodude',
+        type: 'Rock',
+        hp: 40,
+        attack: 55,
+        defense: 65,
+        speed: 25,
+        color: '#B8A038',
+        sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/74.png',
+        moves: ['Tackle', 'RockThrow']
+      },
+      {
+        id: 95,
+        name: 'Onix',
+        type: 'Rock',
+        hp: 45,
+        attack: 60,
+        defense: 85,
+        speed: 30,
+        color: '#B8A038',
+        sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/95.png',
+        moves: ['Tackle', 'RockThrow']
+      }
+    ]
+  },
+  {
+    npc: 'Misty',
+    pokemon: [
+      {
+        id: 120,
+        name: 'Staryu',
+        type: 'Water',
+        hp: 42,
+        attack: 45,
+        defense: 50,
+        speed: 60,
+        color: '#6890F0',
+        sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/120.png',
+        moves: ['WaterGun', 'QuickAttack']
+      },
+      {
+        id: 121,
+        name: 'Starmie',
+        type: 'Water',
+        hp: 60,
+        attack: 75,
+        defense: 65,
+        speed: 85,
+        color: '#6890F0',
+        sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/121.png',
+        moves: ['WaterGun', 'Confusion', 'QuickAttack']
+      }
+    ]
+  }
 ];
+
 
 let gameState = 'menu';
 let signaturePokemon = null;
@@ -90,108 +234,65 @@ function startBattle(battleIndex) {
   render();
 }
 
-function attack() {
-  if (animating || playerTeam[0].currentHp <= 0 || enemyTeam[0].currentHp <= 0) return;
-
+function useMove(moveName) {
+  if (animating) return;
   animating = true;
-  
-  const enemyDisplay = document.getElementById('enemy-display');
-  enemyDisplay.classList.add('shaking');
-  
-  const flashDiv = document.createElement('div');
-  flashDiv.className = 'flash-effect';
-  document.body.appendChild(flashDiv);
 
   const player = playerTeam[0];
   const enemy = enemyTeam[0];
-  
-  const effectiveness = getTypeEffectiveness(player.type, enemy.type);
-  const baseDamage = Math.max(5, Math.floor(player.attack * 0.8 - enemy.defense * 0.3));
-  const damage = Math.floor(baseDamage * effectiveness);
-  const newEnemyHp = Math.max(0, enemy.currentHp - damage);
+  const move = moveDex[moveName];
+
+  if (Math.random() * 100 > move.accuracy) {
+    battleLog.push(`${player.name}'s ${moveName} missed!`);
+    animating = false;
+    render();
+    return;
+  }
+
+  const effectiveness = getTypeEffectiveness(move.type, enemy.type);
+  let damage = Math.floor(
+    ((player.attack * move.power) / enemy.defense) * effectiveness * 0.4
+  );
+  damage = Math.max(5, damage);
+
+  enemy.currentHp = Math.max(0, enemy.currentHp - damage);
+
+  battleLog.push(`${player.name} used ${moveName}! (-${damage} HP)`);
+
+  render();
 
   setTimeout(() => {
-    flashDiv.remove();
-    enemyDisplay.classList.remove('shaking');
-    
-    enemyTeam[0].currentHp = newEnemyHp;
-    
-    let effectivenessText = '';
-    if (effectiveness === 2) effectivenessText = " It's super effective!";
-    if (effectiveness === 0.5) effectivenessText = " It's not very effective...";
-    if (effectiveness === 0) effectivenessText = " It had no effect...";
-    
-    battleLog.push(`${player.name} dealt ${damage} damage!${effectivenessText}`);
-    render();
-
-    if (newEnemyHp <= 0) {
-      setTimeout(() => {
-        battleLog.push(`${enemy.name} fainted!`);
-        
-        const isShiny = Math.random() < 1/160;
-        if (isShiny) {
-          battleLog.push(`✨ Shiny ${enemy.name} caught! +3 Skill Points!`);
-          skillPoints += 3;
-        } else {
-          battleLog.push(`${enemy.name} caught! +1 Skill Point!`);
-          skillPoints += 1;
-        }
-        
-        caughtPokemon.push({ ...enemy, isShiny });
-        render();
-
-        setTimeout(() => {
-          if (enemyTeam.length > 1) {
-            enemyTeam.shift();
-            battleLog.push(`Enemy sent out ${enemyTeam[0].name}!`);
-            render();
-          } else {
-            if (currentBattle < battleSequence.length - 1) {
-              currentBattle++;
-              gameState = 'victory';
-            } else {
-              gameState = 'victory';
-              battleLog.push('🎉 You completed the gauntlet!');
-            }
-            render();
-          }
-          animating = false;
-        }, 1000);
-      }, 500);
-    } else {
-      setTimeout(() => {
-        const playerDisplay = document.getElementById('player-display');
-        playerDisplay.classList.add('shaking');
-        
-        const enemyEffectiveness = getTypeEffectiveness(enemy.type, player.type);
-        const enemyBaseDamage = Math.max(5, Math.floor(enemy.attack * 0.8 - player.defense * 0.3));
-        const enemyDamage = Math.floor(enemyBaseDamage * enemyEffectiveness);
-        const newPlayerHp = Math.max(0, player.currentHp - enemyDamage);
-
-        setTimeout(() => {
-          playerDisplay.classList.remove('shaking');
-          playerTeam[0].currentHp = newPlayerHp;
-          
-          let enemyEffectText = '';
-          if (enemyEffectiveness === 2) enemyEffectText = " It's super effective!";
-          if (enemyEffectiveness === 0.5) enemyEffectText = " It's not very effective...";
-          if (enemyEffectiveness === 0) enemyEffectText = " It had no effect...";
-          
-          battleLog.push(`${enemy.name} dealt ${enemyDamage} damage!${enemyEffectText}`);
-          render();
-
-          if (newPlayerHp <= 0) {
-            setTimeout(() => {
-              battleLog.push(`${player.name} fainted! Run failed!`);
-              gameState = 'defeat';
-              render();
-            }, 500);
-          }
-          animating = false;
-        }, 500);
-      }, 800);
+    if (enemy.currentHp <= 0) {
+      handleEnemyDefeat(enemy);
+      animating = false;
+      return;
     }
-  }, 500);
+
+    enemyTurn();
+  }, 700);
+}
+
+function enemyTurn() {
+  const enemy = enemyTeam[0];
+  const player = playerTeam[0];
+  const moveName = enemy.moves[Math.floor(Math.random() * enemy.moves.length)];
+  const move = moveDex[moveName];
+
+  const effectiveness = getTypeEffectiveness(move.type, player.type);
+  let damage = Math.floor(
+    ((enemy.attack * move.power) / player.defense) * effectiveness * 0.4
+  );
+  damage = Math.max(5, damage);
+
+  player.currentHp = Math.max(0, player.currentHp - damage);
+  battleLog.push(`${enemy.name} used ${moveName}! (-${damage} HP)`);
+
+  if (player.currentHp <= 0) {
+    gameState = 'defeat';
+  }
+
+  animating = false;
+  render();
 }
 
 function unlockSkill(skillId) {
@@ -313,9 +414,11 @@ function render() {
           </div>
         </div>
         
-        <button class="btn-red" onclick="attack()" ${animating ? 'disabled' : ''}>
-          ${animating ? 'Attacking...' : 'ATTACK'}
-        </button>
+        <div class="move-buttons">
+  ${player.moves.map(m =>
+    `<button class="btn-red" onclick="useMove('${m}')">${m}</button>`
+  ).join('')}
+</div>
       </div>
       
       <div class="battle-log">
