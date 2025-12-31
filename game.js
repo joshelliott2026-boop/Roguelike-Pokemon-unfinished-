@@ -295,6 +295,40 @@ function enemyTurn() {
   render();
 }
 
+function handleEnemyDefeat(enemy) {
+  battleLog.push(`${enemy.name} fainted!`);
+
+  // Remove defeated enemy
+  enemyTeam.shift();
+
+  // Award XP + Skill Points
+  skillPoints += 1;
+
+  // If more enemies in this battle → send next one
+  if (enemyTeam.length > 0) {
+    battleLog.push(`Enemy sent out ${enemyTeam[0].name}!`);
+    animating = false;
+    render();
+    return;
+  }
+
+  // Entire trainer defeated
+  battleLog.push(`${battleSequence[currentBattle].npc} was defeated!`);
+
+  // Move to next battle
+  currentBattle++;
+
+  setTimeout(() => {
+    if (currentBattle < battleSequence.length) {
+      startBattle(currentBattle);
+    } else {
+      gameState = 'victory';
+      render();
+    }
+  }, 800);
+}
+
+
 function unlockSkill(skillId) {
   const skill = skillTree.find(s => s.id === skillId);
   if (skill && skillPoints >= skill.cost && !unlockedSkills.includes(skillId)) {
