@@ -1,0 +1,48 @@
+body {
+  background: #64af6a;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+
+button {
+  margin: 4px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.battlefield {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 40px;
+}
+
+.sprite {
+  width: 96px;
+  height: 96px;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+
+.hpbar {
+  width: 220px;
+  height: 12px;
+  border: 1px solid white;
+  margin: 6px auto;
+}
+
+.hpbar div {
+  height: 100%;
+  background: lime;
+}
+
+.partyMon {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.partyMon img {
+  width: 40px;
+}
