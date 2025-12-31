@@ -1,802 +1,351 @@
-//* =============== META SAVE =============== */
-const meta = JSON.parse(localStorage.getItem("meta")) || {
-  skillPoints: 0,
-  unlockedBuffs: [],
-  seenPokemon: [],
-  shinies: [],
-  signaturePokemon: null,
-  starterChoices: null,
-  currentRun: null
+const typeChart = {
+  Fire: { weak: ['Water', 'Ground', 'Rock'], resist: ['Fire', 'Grass', 'Ice', 'Bug', 'Steel', 'Fairy'] },
+  Water: { weak: ['Electric', 'Grass'], resist: ['Fire', 'Water', 'Ice', 'Steel'] },
+  Grass: { weak: ['Fire', 'Ice', 'Poison', 'Flying', 'Bug'], resist: ['Water', 'Electric', 'Grass', 'Ground'] },
+  Electric: { weak: ['Ground'], resist: ['Electric', 'Flying', 'Steel'], immune: [] },
+  Ground: { weak: ['Water', 'Grass', 'Ice'], resist: ['Poison', 'Rock'], immune: ['Electric'] },
+  Rock: { weak: ['Water', 'Grass', 'Fighting', 'Ground', 'Steel'], resist: ['Normal', 'Fire', 'Poison', 'Flying'] },
+  Bug: { weak: ['Fire', 'Flying', 'Rock'], resist: ['Grass', 'Fighting', 'Ground'] },
+  Normal: { weak: ['Fighting'], resist: [], immune: ['Ghost'] },
+  Flying: { weak: ['Electric', 'Ice', 'Rock'], resist: ['Grass', 'Fighting', 'Bug'], immune: ['Ground'] },
+  Psychic: { weak: ['Bug', 'Ghost', 'Dark'], resist: ['Fighting', 'Psychic'] },
 };
 
-function saveMeta() {
-  localStorage.setItem("meta", JSON.stringify(meta));
+const starterPool = [
+  { id: 1, name: 'Bulbasaur', type: 'Grass', hp: 45, attack: 49, defense: 49, speed: 45, color: '#78C850', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png' },
+  { id: 4, name: 'Charmander', type: 'Fire', hp: 39, attack: 52, defense: 43, speed: 65, color: '#F08030', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png' },
+  { id: 7, name: 'Squirtle', type: 'Water', hp: 44, attack: 48, defense: 65, speed: 43, color: '#6890F0', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png' },
+  { id: 25, name: 'Pikachu', type: 'Electric', hp: 35, attack: 55, defense: 40, speed: 90, color: '#F8D030', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png' },
+  { id: 133, name: 'Eevee', type: 'Normal', hp: 55, attack: 55, defense: 50, speed: 55, color: '#A8A878', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/133.png' },
+  { id: 104, name: 'Cubone', type: 'Ground', hp: 50, attack: 50, defense: 95, speed: 35, color: '#E0C068', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/104.png' },
+  { id: 54, name: 'Psyduck', type: 'Water', hp: 50, attack: 52, defense: 48, speed: 55, color: '#6890F0', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/54.png' },
+  { id: 37, name: 'Vulpix', type: 'Fire', hp: 38, attack: 41, defense: 40, speed: 65, color: '#F08030', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/37.png' },
+];
+
+const skillTree = [
+  { id: 'lightning_rod', name: 'Lightning Rod', description: 'Immunity to Electric moves', cost: 3, type: 'ability' },
+  { id: 'early_bird', name: 'Early Bird', description: 'Wake from sleep faster', cost: 2, type: 'ability' },
+  { id: 'leftovers', name: 'Leftovers', description: 'Start with Leftovers item', cost: 4, type: 'item' },
+  { id: 'quick_claw', name: 'Quick Claw', description: 'Start with Quick Claw', cost: 3, type: 'item' },
+  { id: 'shiny_boost', name: 'Shiny Hunter', description: 'Better shiny rates', cost: 5, type: 'passive' },
+  { id: 'hp_boost', name: 'Vitality', description: '+10% max HP', cost: 2, type: 'stat' },
+];
+
+const battleSequence = [
+  { npc: 'Youngster Joey', pokemon: [{ id: 19, name: 'Rattata', type: 'Normal', hp: 30, attack: 35, defense: 25, speed: 40, color: '#A8A878', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/19.png' }] },
+  { npc: 'Bug Catcher', pokemon: [{ id: 10, name: 'Caterpie', type: 'Bug', hp: 28, attack: 30, defense: 25, speed: 30, color: '#A8B820', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10.png' }, { id: 13, name: 'Weedle', type: 'Bug', hp: 28, attack: 30, defense: 25, speed: 30, color: '#A8B820', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/13.png' }] },
+  { npc: 'Lass', pokemon: [{ id: 16, name: 'Pidgey', type: 'Flying', hp: 35, attack: 38, defense: 30, speed: 45, color: '#A890F0', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/16.png' }] },
+  { npc: 'Brock', pokemon: [{ id: 74, name: 'Geodude', type: 'Rock', hp: 40, attack: 55, defense: 65, speed: 25, color: '#B8A038', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/74.png' }, { id: 95, name: 'Onix', type: 'Rock', hp: 45, attack: 60, defense: 85, speed: 30, color: '#B8A038', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/95.png' }] },
+  { npc: 'Misty', pokemon: [{ id: 120, name: 'Staryu', type: 'Water', hp: 42, attack: 45, defense: 50, speed: 60, color: '#6890F0', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/120.png' }, { id: 121, name: 'Starmie', type: 'Water', hp: 60, attack: 75, defense: 65, speed: 85, color: '#6890F0', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/121.png' }] },
+];
+
+let gameState = 'menu';
+let signaturePokemon = null;
+let playerTeam = [];
+let enemyTeam = [];
+let currentBattle = 0;
+let skillPoints = 0;
+let caughtPokemon = [];
+let unlockedSkills = [];
+let battleLog = [];
+let animating = false;
+
+function getTypeEffectiveness(attackerType, defenderType) {
+  const chart = typeChart[attackerType];
+  if (!chart) return 1;
+  
+  if (chart.immune && chart.immune.includes(defenderType)) return 0;
+  if (chart.weak && chart.weak.includes(defenderType)) return 0.5;
+  if (chart.resist && chart.resist.includes(defenderType)) return 2;
+  return 1;
 }
 
-function resetSave() {
-  if (!confirm("Reset all progress?")) return;
-  localStorage.clear();
-  location.reload();
+function getHPColor(currentHp, maxHp) {
+  const ratio = currentHp / maxHp;
+  if (ratio > 0.5) return '#22c55e';
+  if (ratio > 0.2) return '#eab308';
+  return '#ef4444';
 }
 
-const pokedex = {
-  Bulbasaur: { hp: 100, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png",
-    moves: [
-      { name: "Vine Whip", dmg: 14 },
-      { name: "Razor Leaf", dmg: 18 },
-      { name: "Sleep Powder", effect: "sleep" },
-      { name: "Leech Seed", effect: "leech" }
-    ]
-  },
-  Ivysaur: { hp: 120, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/2.png",
-    moves: [
-      { name: "Vine Whip", dmg: 18 },
-      { name: "Razor Leaf", dmg: 22 },
-      { name: "Sleep Powder", effect: "sleep" },
-      { name: "Leech Seed", effect: "leech" }
-    ]
-  },
-  Venusaur: { hp: 160, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/3.png",
-    moves: [
-      { name: "Solar Beam", dmg: 42 },
-      { name: "Razor Leaf", dmg: 26 },
-      { name: "Sleep Powder", effect: "sleep" },
-      { name: "Leech Seed", effect: "leech" }
-    ]
-  },
-  Charmander: { hp: 95, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/4.png",
-    moves: [
-      { name: "Flamethrower", dmg: 28 },
-      { name: "Fire Spin", dmg: 24 },
-      { name: "Growl", effect: "boostEnemyDown" },
-      { name: "Smokescreen", effect: "accuracyDown" }
-    ]
-  },
-  Charmeleon: { hp: 120, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/5.png",
-    moves: [
-      { name: "Flamethrower", dmg: 32 },
-      { name: "Fire Spin", dmg: 28 },
-      { name: "Growl", effect: "boostEnemyDown" },
-      { name: "Smokescreen", effect: "accuracyDown" }
-    ]
-  },
-  Charizard: { hp: 170, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/6.png",
-    moves: [
-      { name: "Fire Blast", dmg: 38 },
-      { name: "Wing Attack", dmg: 30 },
-      { name: "Slash", dmg: 26 },
-      { name: "Smokescreen", effect: "accuracyDown" }
-    ]
-  },
-  Squirtle: { hp: 100, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/7.png",
-    moves: [
-      { name: "Hydro Pump", dmg: 32 },
-      { name: "Water Gun", dmg: 20 },
-      { name: "Tail Whip", effect: "boostEnemyDown" },
-      { name: "Withdraw", effect: "defenseUp" }
-    ]
-  },
-  Wartortle: { hp: 130, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/8.png",
-    moves: [
-      { name: "Hydro Pump", dmg: 36 },
-      { name: "Water Gun", dmg: 24 },
-      { name: "Tail Whip", effect: "boostEnemyDown" },
-      { name: "Withdraw", effect: "defenseUp" }
-    ]
-  },
-  Blastoise: { hp: 160, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/9.png",
-    moves: [
-      { name: "Hydro Pump", dmg: 42 },
-      { name: "Water Gun", dmg: 30 },
-      { name: "Bite", dmg: 20 },
-      { name: "Skull Bash", dmg: 26 }
-    ]
-  },
-  Caterpie: { hp: 70, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/10.png",
-    moves: [
-      { name: "Tackle", dmg: 8 },
-      { name: "String Shot", effect: "speedDown" },
-      { name: "Bug Bite", dmg: 14 },
-      { name: "Harden", effect: "defenseUp" }
-    ]
-  },
-  Metapod: { hp: 75, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/11.png",
-    moves: [
-      { name: "Tackle", dmg: 10 },
-      { name: "Harden", effect: "defenseUp" },
-      { name: "Bug Bite", dmg: 18 },
-      { name: "String Shot", effect: "speedDown" }
-    ]
-  },
-  Butterfree: { hp: 130, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/12.png",
-    moves: [
-      { name: "Psychic", dmg: 30 },
-      { name: "Gust", dmg: 18 },
-      { name: "Sleep Powder", effect: "sleep" },
-      { name: "Stun Spore", effect: "paralyze" }
-    ]
-  },
-  Weedle: { hp: 70, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/13.png",
-    moves: [
-      { name: "Poison Sting", dmg: 8 },
-      { name: "String Shot", effect: "speedDown" },
-      { name: "Bug Bite", dmg: 14 },
-      { name: "Harden", effect: "defenseUp" }
-    ]
-  },
-  Kakuna: { hp: 75, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/14.png",
-    moves: [
-      { name: "Poison Sting", dmg: 10 },
-      { name: "Harden", effect: "defenseUp" },
-      { name: "Bug Bite", dmg: 16 },
-      { name: "String Shot", effect: "speedDown" }
-    ]
-  },
-  Beedrill: { hp: 130, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/15.png",
-    moves: [
-      { name: "Twineedle", dmg: 26 },
-      { name: "Fury Attack", dmg: 24 },
-      { name: "Poison Sting", dmg: 14 },
-      { name: "Bite", dmg: 16 }
-    ]
-  },
-  Pidgey: { hp: 80, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/16.png",
-    moves: [
-      { name: "Gust", dmg: 14 },
-      { name: "Quick Attack", dmg: 12 },
-      { name: "Sand Attack", effect: "accuracyDown" },
-      { name: "Wing Attack", dmg: 22 }
-    ]
-  },
-  Pidgeotto: { hp: 110, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/17.png",
-    moves: [
-      { name: "Wing Attack", dmg: 24 },
-      { name: "Quick Attack", dmg: 14 },
-      { name: "Sand Attack", effect: "accuracyDown" },
-      { name: "Gust", dmg: 16 }
-    ]
-  },
-  Pidgeot: { hp: 140, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/18.png",
-
-  }
-  Rattata: { hp: 70, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/19.png",
-    moves: [
-      { name: "Tackle", dmg: 8 },
-      { name: "Bite", dmg: 12 },
-      { name: "Quick Attack", dmg: 10 },
-      { name: "Tail Whip", effect: "boostEnemyDown" }
-    ]
-  },
-Raticate: { hp: 110, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/20.png",
-    moves: [
-      { name: "Hyper Fang", dmg: 22 },
-      { name: "Bite", dmg: 16 },
-      { name: "Quick Attack", dmg: 12 },
-      { name: "Tail Whip", effect: "boostEnemyDown" }
-    ]
-  },
-Spearow: { hp: 75, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/21.png",
-    moves: [
-      { name: "Peck", dmg: 12 },
-      { name: "Leer", effect: "boostEnemyDown" },
-      { name: "Quick Attack", dmg: 10 },
-      { name: "Fury Attack", dmg: 16 }
-    ]
-  },
-Fearow: { hp: 120, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/22.png",
-    moves: [
-      { name: "Drill Peck", dmg: 26 },
-      { name: "Agility", effect: "speedUp" },
-      { name: "Fury Attack", dmg: 22 },
-      { name: "Quick Attack", dmg: 14 }
-    ]
-  },
-Ekans: { hp: 80, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/23.png",
-    moves: [
-      { name: "Bite", dmg: 14 },
-      { name: "Poison Sting", dmg: 8 },
-      { name: "Wrap", dmg: 10 },
-      { name: "Glare", effect: "paralyze" }
-    ]
-  },
-Arbok: { hp: 130, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/24.png",
-    moves: [
-      { name: "Bite", dmg: 20 },
-      { name: "Acid", dmg: 18 },
-      { name: "Glare", effect: "paralyze" },
-      { name: "Wrap", dmg: 12 }
-    ]
-  },
-Pikachu: { hp: 90, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/25.png",
-    moves: [
-      { name: "Thunder Shock", dmg: 14 },
-      { name: "Quick Attack", dmg: 10 },
-      { name: "Thunder Wave", effect: "paralyze" },
-      { name: "Electro Ball", dmg: 20 }
-    ]
-  },
-Raichu: { hp: 130, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/26.png",
-    moves: [
-      { name: "Thunderbolt", dmg: 28 },
-      { name: "Quick Attack", dmg: 14 },
-      { name: "Thunder Wave", effect: "paralyze" },
-      { name: "Volt Tackle", dmg: 32 }
-    ]
-  },
-Sandshrew: { hp: 80, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/27.png",
-    moves: [
-      { name: "Scratch", dmg: 10 },
-      { name: "Sand Attack", effect: "accuracyDown" },
-      { name: "Rollout", dmg: 12 },
-      { name: "Slash", dmg: 14 }
-    ]
-  },
-Sandslash: { hp: 130, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/28.png",
-    moves: [
-      { name: "Slash", dmg: 24 },
-      { name: "Rollout", dmg: 16 },
-      { name: "Sand Attack", effect: "accuracyDown" },
-      { name: "Earthquake", dmg: 28 }
-    ]
-  },
-NidoranF: { hp: 80, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/29.png",
-    moves: [
-      { name: "Peck", dmg: 10 },
-      { name: "Scratch", dmg: 12 },
-      { name: "Double Kick", dmg: 14 },
-      { name: "Tail Whip", effect: "boostEnemyDown" }
-    ]
-  },
-Nidorina: { hp: 110, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/30.png",
-    moves: [
-      { name: "Double Kick", dmg: 18 },
-      { name: "Bite", dmg: 16 },
-      { name: "Scratch", dmg: 14 },
-      { name: "Tail Whip", effect: "boostEnemyDown" }
-    ]
-  },
-Nidoqueen: { hp: 160, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/31.png",
-    moves: [
-      { name: "Earthquake", dmg: 28 },
-      { name: "Body Slam", dmg: 20 },
-      { name: "Double Kick", dmg: 22 },
-      { name: "Tail Whip", effect: "boostEnemyDown" }
-    ]
-  },
-NidoranM: { hp: 80, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/32.png",
-    moves: [
-      { name: "Peck", dmg: 10 },
-      { name: "Scratch", dmg: 12 },
-      { name: "Double Kick", dmg: 14 },
-      { name: "Tail Whip", effect: "boostEnemyDown" }
-    ]
-  },
-Nidorino: { hp: 110, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/33.png",
-    moves: [
-      { name: "Double Kick", dmg: 18 },
-      { name: "Horn Attack", dmg: 16 },
-      { name: "Scratch", dmg: 14 },
-      { name: "Tail Whip", effect: "boostEnemyDown" }
-    ]
-  },
-Nidoking: { hp: 160, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/34.png",
-    moves: [
-      { name: "Earthquake", dmg: 28 },
-      { name: "Horn Attack", dmg: 22 },
-      { name: "Double Kick", dmg: 22 },
-      { name: "Tail Whip", effect: "boostEnemyDown" }
-    ]
-  },
-Clefairy: { hp: 100, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/35.png",
-    moves: [
-      { name: "Pound", dmg: 12 },
-      { name: "Sing", effect: "sleep" },
-      { name: "Double Slap", dmg: 14 },
-      { name: "Defense Curl", effect: "defenseUp" }
-    ]
-  },
-Clefable: { hp: 140, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/36.png",
-    moves: [
-      { name: "Pound", dmg: 16 },
-      { name: "Double Slap", dmg: 18 },
-      { name: "Sing", effect: "sleep" },
-      { name: "Defense Curl", effect: "defenseUp" }
-    ]
-  },
-Vulpix: { hp: 80, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/37.png",
-    moves: [
-      { name: "Ember", dmg: 14 },
-      { name: "Tail Whip", effect: "boostEnemyDown" },
-      { name: "Quick Attack", dmg: 10 },
-      { name: "Roar", effect: "skipNext" }
-    ]
-  },
-Ninetales: { hp: 130, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/38.png",
-    moves: [
-      { name: "Flamethrower", dmg: 28 },
-      { name: "Confuse Ray", effect: "confuse" },
-      { name: "Quick Attack", dmg: 14 },
-      { name: "Roar", effect: "skipNext" }
-    ]
-  },
-Jigglypuff: { hp: 100, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/39.png",
-    moves: [
-      { name: "Pound", dmg: 12 },
-      { name: "Sing", effect: "sleep" },
-      { name: "Double Slap", dmg: 14 },
-      { name: "Defense Curl", effect: "defenseUp" }
-    ]
-  },
-Wigglytuff: { hp: 140, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/40.png",
-    moves: [
-      { name: "Pound", dmg: 16 },
-      { name: "Double Slap", dmg: 18 },
-      { name: "Sing", effect: "sleep" },
-      { name: "Defense Curl", effect: "defenseUp" }
-    ]
-  },
-Zubat: { hp: 60, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/41.png",
-    moves: [
-      { name: "Leech Life", dmg: 10 },
-      { name: "Bite", dmg: 12 },
-      { name: "Supersonic", effect: "confuse" },
-      { name: "Wing Attack", dmg: 18 }
-    ]
-  },
-Golbat: { hp: 120, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/42.png",
-    moves: [
-      { name: "Bite", dmg: 20 },
-      { name: "Wing Attack", dmg: 24 },
-      { name: "Supersonic", effect: "confuse" },
-      { name: "Leech Life", dmg: 12 }
-    ]
-  },
-Oddish: { hp: 80, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/43.png",
-    moves: [
-      { name: "Acid", dmg: 12 },
-      { name: "Absorb", dmg: 10 },
-      { name: "Sleep Powder", effect: "sleep" },
-      { name: "Stun Spore", effect: "paralyze" }
-    ]
-  },
-Gloom: { hp: 110, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/44.png",
-    moves: [
-      { name: "Acid", dmg: 16 },
-      { name: "Razor Leaf", dmg: 20 },
-      { name: "Sleep Powder", effect: "sleep" },
-      { name: "Stun Spore", effect: "paralyze" }
-    ]
-  },
-Vileplume: { hp: 130, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/45.png",
-    moves: [
-      { name: "Petal Dance", dmg: 28 },
-      { name: "Razor Leaf", dmg: 24 },
-      { name: "Sleep Powder", effect: "sleep" },
-      { name: "Stun Spore", effect: "paralyze" }
-  ]
-},
-Paras: { hp: 70, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/46.png",
-    moves: [
-      { name: "Scratch", dmg: 10 },
-      { name: "Stun Spore", effect: "paralyze" },
-      { name: "Leech Life", dmg: 12 },
-      { name: "Spore", effect: "sleep" }
-    ]
-  },
-Parasect: { hp: 120, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/47.png",
-    moves: [
-      { name: "Slash", dmg: 22 },
-      { name: "Spore", effect: "sleep" },
-      { name: "Leech Life", dmg: 14 },
-      { name: "Stun Spore", effect: "paralyze" }
-    ]
-  },
-Venonat: { hp: 80, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/48.png",
-    moves: [
-      { name: "Tackle", dmg: 10 },
-      { name: "Confusion", dmg: 14 },
-      { name: "Stun Spore", effect: "paralyze" },
-      { name: "Leech Life", dmg: 12 }
-    ]
-  },
-Venomoth: { hp: 120, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/49.png",
-    moves: [
-      { name: "Confusion", dmg: 20 },
-      { name: "Gust", dmg: 16 },
-      { name: "Stun Spore", effect: "paralyze" },
-      { name: "Leech Life", dmg: 14 }
-    ]
-  },
-Diglett: { hp: 60, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/50.png",
-    moves: [
-      { name: "Scratch", dmg: 10 },
-      { name: "Dig", dmg: 18 },
-      { name: "Growl", effect: "boostEnemyDown" },
-      { name: "Screech", effect: "defenseDown" }
-    ]
-  },
-Dugtrio: { hp: 120, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/51.png",
-    moves: [
-      { name: "Earthquake", dmg: 28 },
-      { name: "Slash", dmg: 24 },
-      { name: "Growl", effect: "boostEnemyDown" },
-      { name: "Screech", effect: "defenseDown" }
-    ]
-  },
-Meowth: { hp: 70, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/52.png",
-    moves: [
-      { name: "Scratch", dmg: 10 },
-      { name: "Bite", dmg: 12 },
-      { name: "Pay Day", dmg: 14 },
-      { name: "Growl", effect: "boostEnemyDown" }
-    ]
-  },
-Persian: { hp: 130, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/53.png",
-    moves: [
-      { name: "Slash", dmg: 24 },
-      { name: "Bite", dmg: 20 },
-      { name: "Pay Day", dmg: 18 },
-      { name: "Growl", effect: "boostEnemyDown" }
-    ]
-  },
-Psyduck: { hp: 100, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/54.png",
-    moves: [
-      { name: "Water Gun", dmg: 16 },
-      { name: "Scratch", dmg: 12 },
-      { name: "Confusion", dmg: 18 },
-      { name: "Tail Whip", effect: "boostEnemyDown" }
-    ]
-  },
-Golduck: { hp: 140, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/55.png",
-    moves: [
-      { name: "Hydro Pump", dmg: 28 },
-      { name: "Confusion", dmg: 22 },
-      { name: "Scratch", dmg: 16 },
-      { name: "Tail Whip", effect: "boostEnemyDown" }
-    ]
-  },
-Mankey: { hp: 80, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/56.png",
-    moves: [
-      { name: "Scratch", dmg: 12 },
-      { name: "Low Kick", dmg: 16 },
-      { name: "Leer", effect: "boostEnemyDown" },
-      { name: "Fury Swipes", dmg: 18 }
-    ]
-  },
-Primeape: { hp: 130, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/57.png",
-    moves: [
-      { name: "Scratch", dmg: 16 },
-      { name: "Low Kick", dmg: 20 },
-      { name: "Fury Swipes", dmg: 24 },
-      { name: "Leer", effect: "boostEnemyDown" }
-    ]
-  },
-Growlithe: { hp: 90, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/58.png",
-    moves: [
-      { name: "Bite", dmg: 16 },
-      { name: "Ember", dmg: 14 },
-      { name: "Roar", effect: "skipNext" },
-      { name: "Leer", effect: "boostEnemyDown" }
-    ]
-  },
-Arcanine: { hp: 150, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/59.png",
-    moves: [
-      { name: "Flamethrower", dmg: 30 },
-      { name: "Bite", dmg: 22 },
-      { name: "Roar", effect: "skipNext" },
-      { name: "Leer", effect: "boostEnemyDown" }
-    ]
-  },
-Poliwag: { hp: 70, sprite: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/60.png",
-    moves: [
-      { name: "Water Gun", dmg: 14 },
-      { name: "Hypnosis", effect: "sleep" },
-      { name: "Body Slam", dmg: 16 },
-      { name: "Mud Shot", dmg: 18 }
-    ]
-  },
-     
-
-
-const evolutions = {
-  Bulbasaur:{level:16,to:"Ivysaur"}, Ivysaur:{level:32,to:"Venusaur"},
-  Charmander:{level:16,to:"Charmeleon"}, Charmeleon:{level:36,to:"Charizard"},
-  Squirtle:{level:16,to:"Wartortle"}, Wartortle:{level:36,to:"Blastoise"},
-  Pikachu:{level:20,to:"Raichu"}
-  // ... add remaining evolutions
-};
-
-/***********************
- RUN STATE
-***********************/
-let party = [];
-let playerPokemon = null;
-let enemyPokemon = null;
-let floor = 1;
-let stage = 1;
-
-/***********************
- MAIN MENU
-***********************/
-function showMainMenu() {
-  let html = "<h2>Pokémon Roguelike</h2>";
-
-  if (!meta.signaturePokemon) {
-    html += `<button onclick="chooseSignature()">Choose Signature Pokémon</button>`;
-  } else {
-    if (meta.currentRun) html += `<button onclick="resumeRun()">Resume Run</button>`;
-    html += `<button onclick="startNewRun()">Start New Run</button>`;
+function startBattle(battleIndex) {
+  const battle = battleSequence[battleIndex];
+  const team = [{ ...signaturePokemon, currentHp: signaturePokemon.hp, maxHp: signaturePokemon.hp }];
+  
+  if (unlockedSkills.includes('hp_boost')) {
+    team[0].maxHp = Math.floor(team[0].maxHp * 1.1);
+    team[0].currentHp = team[0].maxHp;
   }
 
-  html += `<button onclick="openSkillTree()">Skill Tree</button>`;
-  html += `<button onclick="resetSave()">Reset All Progress</button>`;
-  document.getElementById("game").innerHTML = html;
+  const enemies = battle.pokemon.map(p => ({
+    ...p,
+    currentHp: p.hp,
+    maxHp: p.hp,
+    uniqueId: Math.random()
+  }));
+
+  playerTeam = team;
+  enemyTeam = enemies;
+  battleLog = [`${battle.npc} wants to battle!`];
+  gameState = 'battle';
+  render();
 }
 
-const firstStageStarters = ["Bulbasaur","Charmander","Squirtle","Pidgey","Rattata"];
+function attack() {
+  if (animating || playerTeam[0].currentHp <= 0 || enemyTeam[0].currentHp <= 0) return;
 
-function chooseSignature() {
-  if (!meta.starterChoices) {
-    meta.starterChoices = shuffle([...firstStageStarters]).slice(0,3);
-    saveMeta();
-  }
+  animating = true;
+  
+  const enemyDisplay = document.getElementById('enemy-display');
+  enemyDisplay.classList.add('shaking');
+  
+  const flashDiv = document.createElement('div');
+  flashDiv.className = 'flash-effect';
+  document.body.appendChild(flashDiv);
 
-  let html = "<h2>Choose Your Signature Pokémon</h2>";
-  meta.starterChoices.forEach(p => {
-    html += `<button onclick="setSignature('${p}')">${p}</button>`;
-  });
-  html += `<br><button onclick="showMainMenu()">Back</button>`;
-  document.getElementById("game").innerHTML = html;
-}
+  const player = playerTeam[0];
+  const enemy = enemyTeam[0];
+  
+  const effectiveness = getTypeEffectiveness(player.type, enemy.type);
+  const baseDamage = Math.max(5, Math.floor(player.attack * 0.8 - enemy.defense * 0.3));
+  const damage = Math.floor(baseDamage * effectiveness);
+  const newEnemyHp = Math.max(0, enemy.currentHp - damage);
 
-function setSignature(name) {
-  meta.signaturePokemon = name;
-  saveMeta();
-  startNewRun();
-}
-
-function startNewRun() {
-  if (!meta.signaturePokemon) return chooseSignature();
-
-  floor = 1;
-  stage = 1;
-  party = [];
-
-  const base = JSON.parse(JSON.stringify(pokedex[meta.signaturePokemon]));
-  base.name = meta.signaturePokemon;
-  base.level = 5;
-  base.xp = 0;
-  base.maxHp = base.hp;
-  base.currentHp = base.maxHp;
-
-  party.push(base);
-  playerPokemon = base;
-
-  meta.currentRun = { floor, stage, party };
-  saveMeta();
-
-  nextStage();
-}
-
-/***********************
- RESUME RUN
-***********************/
-function resumeRun() {
-  const run = meta.currentRun;
-  if (!run) return startNewRun();
-  floor = run.floor;
-  stage = run.stage;
-  party = run.party;
-  playerPokemon = party[0];
-  nextStage();
-}
-
-/***********************
- FLOOR / STAGE
-***********************/
-function nextStage() {
-  if (stage > 10) {
-    stage = 1;
-    floor++;
-  }
-
-  meta.currentRun = { floor, stage, party };
-  saveMeta();
-
-  if (stage === 5) startTrainerBattle();
-  else if (stage === 10) startBossBattle();
-  else startWildBattle();
-
-  stage++;
-}
-
-function getEnemyLevel() {
-  return 3 + floor * 3 + Math.floor(Math.random() * 3);
-}
-
-function startWildBattle() {
-  const pool = Object.keys(pokedex);
-  startBattle(createEnemy(pool[Math.floor(Math.random()*pool.length)], true));
-}
-
-function startTrainerBattle() {
-  startBattle(createEnemy("Pidgey", false));
-}
-
-function startBossBattle() {
-  startBattle(createEnemy("Charmeleon", false));
-}
-
-function createEnemy(name, shinyAllowed) {
-  const e = JSON.parse(JSON.stringify(pokedex[name]));
-  e.name = name;
-  e.level = getEnemyLevel();
-  e.maxHp = e.hp + e.level * 5;
-  e.currentHp = e.maxHp;
-  e.isShiny = shinyAllowed && Math.random() < 1/160;
-  if (e.isShiny) e.sprite = e.sprite.replace("pokemon/","pokemon/shiny/");
-  return e;
-}
-
-function startBattle(enemy) {
-  enemyPokemon = enemy;
-
-  // Show battle screen
-  document.getElementById("game").style.display = "none";
-  document.getElementById("battle").style.display = "block";
-
-  updateBattleUI();
-  showBattleOptions(); // Ensure fight button is added
-}
-
-function updateBattleUI() {
-  document.getElementById("playerSprite").style.backgroundImage = `url(${playerPokemon.sprite})`;
-  document.getElementById("enemySprite").style.backgroundImage = `url(${enemyPokemon.sprite})`;
-
-  document.getElementById("playerHp").style.width =
-    `${(playerPokemon.currentHp/playerPokemon.maxHp)*100}%`;
-  document.getElementById("enemyHp").style.width =
-    `${(enemyPokemon.currentHp/enemyPokemon.maxHp)*100}%`;
-
-  document.getElementById("battleTitle").innerText =
-    `Floor ${floor} – Stage ${stage-1} – ${enemyPokemon.name} Lv ${enemyPokemon.level}`;
-}
-
-function showBattleOptions() {
-  const div = document.getElementById("moveButtons");
-  div.innerHTML = ""; // Clear previous buttons
-
-  // Always add Fight button
-  const fightBtn = document.createElement("button");
-  fightBtn.innerText = "Fight";
-  fightBtn.onclick = showMoves;
-  div.appendChild(fightBtn);
-
-  // Always add Exit button
-  const exitBtn = document.createElement("button");
-  exitBtn.innerText = "Exit";
-  exitBtn.onclick = exitRun;
-  div.appendChild(exitBtn);
-}
-
-function showMoves() {
-  const div = document.getElementById("moveButtons");
-  div.innerHTML = ""; // Clear options
-
-  playerPokemon.moves.forEach(m => {
-    const b = document.createElement("button");
-    b.innerText = m.name;
-    b.onclick = () => useMove(m);
-    div.appendChild(b);
-  });
-
-  // Add back button to return to fight/exit options
-  const backBtn = document.createElement("button");
-  backBtn.innerText = "Back";
-  backBtn.onclick = showBattleOptions;
-  div.appendChild(backBtn);
-}
-
-
-function useMove(move) {
-  enemyPokemon.currentHp -= move.dmg;
-  if (enemyPokemon.currentHp <= 0) {
-    winBattle();
-    return;
-  }
-  enemyTurn();
-  updateBattleUI();
-}
-
-function enemyTurn() {
-  const m = enemyPokemon.moves[Math.floor(Math.random()*enemyPokemon.moves.length)];
-  playerPokemon.currentHp -= m.dmg;
-  if (playerPokemon.currentHp <= 0) endRun();
-}
-
-function winBattle() {
-  gainXP(playerPokemon, enemyPokemon.level*10);
-  endBattle();
-}
-
-function gainXP(p, amount) {
-  p.xp += amount;
-  if (p.xp >= p.level*20) {
-    p.xp = 0;
-    p.level++;
-    p.maxHp += 10;
-    p.currentHp = p.maxHp;
-    checkEvolution(p);
-  }
-}
-
-function checkEvolution(p) {
-  const evo = evolutions[p.name];
-  if (evo && p.level >= evo.level) {
-    const d = pokedex[evo.to];
-    p.name = evo.to;
-    p.sprite = d.sprite;
-    p.moves = d.moves;
-    p.maxHp = d.hp + p.level*5;
-    p.currentHp = p.maxHp;
-    alert(`${p.name} evolved!`);
-  }
-}
-
-function endBattle() {
-  meta.currentRun = { floor, stage, party };
-  saveMeta();
   setTimeout(() => {
-    document.getElementById("battle").style.display = "none";
-    document.getElementById("game").style.display = "block";
-    nextStage();
+    flashDiv.remove();
+    enemyDisplay.classList.remove('shaking');
+    
+    enemyTeam[0].currentHp = newEnemyHp;
+    
+    let effectivenessText = '';
+    if (effectiveness === 2) effectivenessText = " It's super effective!";
+    if (effectiveness === 0.5) effectivenessText = " It's not very effective...";
+    if (effectiveness === 0) effectivenessText = " It had no effect...";
+    
+    battleLog.push(`${player.name} dealt ${damage} damage!${effectivenessText}`);
+    render();
+
+    if (newEnemyHp <= 0) {
+      setTimeout(() => {
+        battleLog.push(`${enemy.name} fainted!`);
+        
+        const isShiny = Math.random() < 1/160;
+        if (isShiny) {
+          battleLog.push(`✨ Shiny ${enemy.name} caught! +3 Skill Points!`);
+          skillPoints += 3;
+        } else {
+          battleLog.push(`${enemy.name} caught! +1 Skill Point!`);
+          skillPoints += 1;
+        }
+        
+        caughtPokemon.push({ ...enemy, isShiny });
+        render();
+
+        setTimeout(() => {
+          if (enemyTeam.length > 1) {
+            enemyTeam.shift();
+            battleLog.push(`Enemy sent out ${enemyTeam[0].name}!`);
+            render();
+          } else {
+            if (currentBattle < battleSequence.length - 1) {
+              currentBattle++;
+              gameState = 'victory';
+            } else {
+              gameState = 'victory';
+              battleLog.push('🎉 You completed the gauntlet!');
+            }
+            render();
+          }
+          animating = false;
+        }, 1000);
+      }, 500);
+    } else {
+      setTimeout(() => {
+        const playerDisplay = document.getElementById('player-display');
+        playerDisplay.classList.add('shaking');
+        
+        const enemyEffectiveness = getTypeEffectiveness(enemy.type, player.type);
+        const enemyBaseDamage = Math.max(5, Math.floor(enemy.attack * 0.8 - player.defense * 0.3));
+        const enemyDamage = Math.floor(enemyBaseDamage * enemyEffectiveness);
+        const newPlayerHp = Math.max(0, player.currentHp - enemyDamage);
+
+        setTimeout(() => {
+          playerDisplay.classList.remove('shaking');
+          playerTeam[0].currentHp = newPlayerHp;
+          
+          let enemyEffectText = '';
+          if (enemyEffectiveness === 2) enemyEffectText = " It's super effective!";
+          if (enemyEffectiveness === 0.5) enemyEffectText = " It's not very effective...";
+          if (enemyEffectiveness === 0) enemyEffectText = " It had no effect...";
+          
+          battleLog.push(`${enemy.name} dealt ${enemyDamage} damage!${enemyEffectText}`);
+          render();
+
+          if (newPlayerHp <= 0) {
+            setTimeout(() => {
+              battleLog.push(`${player.name} fainted! Run failed!`);
+              gameState = 'defeat';
+              render();
+            }, 500);
+          }
+          animating = false;
+        }, 500);
+      }, 800);
+    }
   }, 500);
 }
 
-function endRun() {
-  document.getElementById("battle").style.display = "none";
-  document.getElementById("game").style.display = "block";
-  meta.currentRun = null;
-  saveMeta();
-  showMainMenu();
-}
-
-function exitRun() {
-  document.getElementById("battle").style.display = "none";
-  document.getElementById("game").style.display = "block";
-  meta.currentRun = { floor, stage, party };
-  saveMeta();
-  showMainMenu();
-}
-
-function openSkillTree() {
-  let html = "<h2>Skill Tree</h2>";
-  html += `<p>Skill Points: ${meta.skillPoints}</p>`;
-  html += "<ul>";
-  const buffs = ["Lightning Rod","Early Bird","Leftovers"];
-  buffs.forEach(b => {
-    html += `<li>${b} <button onclick="unlockBuff('${b}')">Unlock</button></li>`;
-  });
-  html += "</ul>";
-  html += `<button onclick="showMainMenu()">Back</button>`;
-  document.getElementById("game").innerHTML = html;
-}
-
-function unlockBuff(buff) {
-  if (meta.skillPoints <= 0) { alert("Not enough skill points!"); return; }
-  if (meta.unlockedBuffs.includes(buff)) { alert("Already unlocked!"); return; }
-  meta.skillPoints--;
-  meta.unlockedBuffs.push(buff);
-  saveMeta();
-  openSkillTree();
-}
-
-function shuffle(arr) {
-  for (let i=arr.length-1;i>0;i--) {
-    const j=Math.floor(Math.random()*(i+1));
-    [arr[i],arr[j]]=[arr[j],arr[i]];
+function unlockSkill(skillId) {
+  const skill = skillTree.find(s => s.id === skillId);
+  if (skill && skillPoints >= skill.cost && !unlockedSkills.includes(skillId)) {
+    skillPoints -= skill.cost;
+    unlockedSkills.push(skillId);
+    render();
   }
-  return arr;
 }
 
-showMainMenu();
+function selectStarter(pokemon) {
+  signaturePokemon = pokemon;
+  gameState = 'menu';
+  render();
+}
+
+function render() {
+  const app = document.getElementById('app');
+  
+  if (gameState === 'menu') {
+    app.innerHTML = `
+      <div class="card">
+        <div class="header-info">
+          <div>Skill Points: <span class="skill-points">${skillPoints}</span></div>
+          ${signaturePokemon ? `<div>Signature: <span class="signature-pokemon" style="color: ${signaturePokemon.color}">${signaturePokemon.name}</span></div>` : ''}
+        </div>
+        
+        ${!signaturePokemon ? `
+          <p class="warning-text">First, select your signature Pokemon for all runs!</p>
+          <button class="btn-green" onclick="gameState = 'selectStarter'; render();">Choose Signature Pokemon</button>
+        ` : `
+          <button class="btn-red" onclick="startBattle(currentBattle)">Start Run (Battle ${currentBattle + 1}/${battleSequence.length})</button>
+          <button class="btn-purple" onclick="gameState = 'skillTree'; render();">🏆 Skill Tree</button>
+          <div class="caught-pokemon">
+            <h3>Caught Pokemon: ${caughtPokemon.length}</h3>
+            <div class="pokemon-list">
+              ${caughtPokemon.slice(-10).map(p => `<span style="color: ${p.color}">${p.isShiny ? '✨' : ''}${p.name}</span>`).join('')}
+            </div>
+          </div>
+        `}
+      </div>
+    `;
+  } else if (gameState === 'selectStarter') {
+    app.innerHTML = `
+      <div class="card">
+        <h2 class="text-center">Choose Your Signature Pokemon</h2>
+        <div class="starter-grid">
+          ${starterPool.map(pokemon => `
+            <div class="starter-card" style="border-color: ${pokemon.color}" onclick="selectStarter(starterPool[${starterPool.indexOf(pokemon)}])">
+              <img src="${pokemon.sprite}" alt="${pokemon.name}">
+              <div class="pokemon-name" style="color: ${pokemon.color}">${pokemon.name}</div>
+              <div class="pokemon-type">${pokemon.type}</div>
+              <div class="pokemon-stats">HP: ${pokemon.hp} | ATK: ${pokemon.attack}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  } else if (gameState === 'skillTree') {
+    app.innerHTML = `
+      <div class="card">
+        <div class="header-info">
+          <h2>Skill Tree</h2>
+          <div>Points: <span class="skill-points">${skillPoints}</span></div>
+        </div>
+        ${skillTree.map(skill => {
+          const isUnlocked = unlockedSkills.includes(skill.id);
+          const canAfford = skillPoints >= skill.cost;
+          return `
+            <div class="skill-item ${isUnlocked ? 'unlocked' : ''}">
+              <div class="skill-info">
+                <h3>${skill.name}</h3>
+                <p>${skill.description}</p>
+                <div class="skill-cost">Cost: ${skill.cost} SP</div>
+              </div>
+              ${!isUnlocked ? `
+                <button class="skill-unlock ${canAfford ? 'btn-yellow' : 'btn-gray'}" 
+                        onclick="unlockSkill('${skill.id}')" 
+                        ${!canAfford ? 'disabled' : ''}>
+                  Unlock
+                </button>
+              ` : '<span style="color: #22c55e; font-weight: bold;">✓ Unlocked</span>'}
+            </div>
+          `;
+        }).join('')}
+        <button class="btn-gray" onclick="gameState = 'menu'; render();">Back to Menu</button>
+      </div>
+    `;
+  } else if (gameState === 'battle') {
+    const player = playerTeam[0];
+    const enemy = enemyTeam[0];
+    
+    app.innerHTML = `
+      <div class="card">
+        <h2 class="text-center">${battleSequence[currentBattle].npc}</h2>
+        
+        <div class="battle-arena">
+          <div class="pokemon-display enemy-display" id="enemy-display">
+            <div class="pokemon-shadow"></div>
+            <img src="${enemy.sprite}" alt="${enemy.name}">
+            <h3>${enemy.name}</h3>
+            <span class="type-badge" style="background-color: ${enemy.color}">${enemy.type}</span>
+            <div class="hp-bar-container">
+              <div class="hp-bar" style="width: ${(enemy.currentHp / enemy.maxHp) * 100}%; background-color: ${getHPColor(enemy.currentHp, enemy.maxHp)}"></div>
+            </div>
+            <div class="hp-text">${enemy.currentHp} / ${enemy.maxHp} HP</div>
+          </div>
+          
+          <div class="pokemon-display player-display" id="player-display">
+            <div class="pokemon-shadow"></div>
+            <img src="${player.sprite}" alt="${player.name}">
+            <h3>${player.name}</h3>
+            <span class="type-badge" style="background-color: ${player.color}">${player.type}</span>
+            <div class="hp-bar-container">
+              <div class="hp-bar" style="width: ${(player.currentHp / player.maxHp) * 100}%; background-color: ${getHPColor(player.currentHp, player.maxHp)}"></div>
+            </div>
+            <div class="hp-text">${player.currentHp} / ${player.maxHp} HP</div>
+          </div>
+        </div>
+        
+        <button class="btn-red" onclick="attack()" ${animating ? 'disabled' : ''}>
+          ${animating ? 'Attacking...' : 'ATTACK'}
+        </button>
+      </div>
+      
+      <div class="battle-log">
+        ${battleLog.map(log => `<div>${log}</div>`).join('')}
+      </div>
+    `;
+  } else if (gameState === 'victory') {
+    app.innerHTML = `
+      <div class="card victory-screen">
+        <div style="font-size: 4rem;">🎉</div>
+        <h2>Victory!</h2>
+        <p>You defeated ${battleSequence[currentBattle].npc}!</p>
+        ${currentBattle < battleSequence.length - 1 ? `
+          <button class="btn-green" onclick="startBattle(currentBattle + 1)">Next Battle</button>
+        ` : `
+          <p style="font-size: 1.5rem;">🏆 Gauntlet Complete! 🏆</p>
+          <button class="btn-purple" onclick="currentBattle = 0; gameState = 'menu'; render();">Return to Menu</button>
+        `}
+      </div>
+    `;
+  } else if (gameState === 'defeat') {
+    app.innerHTML = `
+      <div class="card defeat-screen">
+        <div style="font-size: 4rem;">💀</div>
+        <h2>Defeated!</h2>
+        <p>Your run has ended. Try again!</p>
+        <button class="btn-red" onclick="currentBattle = 0; gameState = 'menu'; render();">Return to Menu</button>
+      </div>
+    `;
+  }
+}
+
+render();
