@@ -213,22 +213,25 @@ function getHPColor(currentHp, maxHp) {
 
 function startBattle(battleIndex) {
   const battle = battleSequence[battleIndex];
-  const team = [{ ...signaturePokemon, currentHp: signaturePokemon.hp, maxHp: signaturePokemon.hp }];
-  
-  if (unlockedSkills.includes('hp_boost')) {
-    team[0].maxHp = Math.floor(team[0].maxHp * 1.1);
-    team[0].currentHp = team[0].maxHp;
-  }
 
-  const enemies = battle.pokemon.map(p => ({
+  // If party is empty, include signature Pokemon
+  if (party.length === 0) party = [signaturePokemon];
+
+  // Setup player team
+  playerTeam = party.map(p => ({
+    ...p,
+    currentHp: p.hp,
+    maxHp: p.hp
+  }));
+
+  // Setup enemies
+  enemyTeam = battle.pokemon.map(p => ({
     ...p,
     currentHp: p.hp,
     maxHp: p.hp,
     uniqueId: Math.random()
   }));
 
-  playerTeam = team;
-  enemyTeam = enemies;
   battleLog = [`${battle.npc} wants to battle!`];
   gameState = 'battle';
   render();
@@ -298,36 +301,33 @@ function enemyTurn() {
 function handleEnemyDefeat(enemy) {
   battleLog.push(`${enemy.name} fainted!`);
 
-  // Remove defeated enemy
-  enemyTeam.shift();
-
-  // Award XP + Skill Points
-  skillPoints += 1;
-
-  // If more enemies in this battle → send next one
-  if (enemyTeam.length > 0) {
-    battleLog.push(`Enemy sent out ${enemyTeam[0].name}!`);
-    animating = false;
-    render();
-    return;
+  // Catching chance
+  const catchChance = Math.min(90, 50 + (playerTeam[0].currentHp / playerTeam[0].maxHp) * 50);
+  if (Math.random() * 100 < catchChance) {
+    const isShiny = Math.random() < 1/160;
+    caughtPokemon.push({ ...enemy, isShiny });
+    const pointsGained = isShiny ? 3 : 1;
+    skillPoints += pointsGained;
+    battleLog.push(`✨ You caught ${enemy.name}! +${pointsGained} Skill Points`);
+  } else {
+    battleLog.push(`You failed to catch ${enemy.name}`);
   }
 
-  // Entire trainer defeated
-  battleLog.push(`${battleSequence[currentBattle].npc} was defeated!`);
-
-  // Move to next battle
-  currentBattle++;
-
-  setTimeout(() => {
-    if (currentBattle < battleSequence.length) {
-      startBattle(currentBattle);
+  enemyTeam.shift(); // Remove defeated enemy
+  if (enemyTeam.length > 0) {
+    battleLog.push(`Enemy sent out ${enemyTeam[0].name}!`);
+  } else {
+    if (currentBattle < battleSequence.length - 1) {
+      currentBattle++;
+      gameState = 'victory';
     } else {
       gameState = 'victory';
-      render();
+      battleLog.push('🎉 You completed the gauntlet!');
     }
-  }, 800);
-}
+  }
 
+  render();
+}
 
 function unlockSkill(skillId) {
   const skill = skillTree.find(s => s.id === skillId);
@@ -341,6 +341,35 @@ function unlockSkill(skillId) {
 function selectStarter(pokemon) {
   signaturePokemon = pokemon;
   gameState = 'menu';
+  render();
+}
+
+
+let partyPoints = 10; // Max points to spend for party
+let party = []; // Current party selection (signature Pokemon is always included)
+
+function openPartyScreen() {
+  // Ensure signature Pokemon is always in the party
+  if (!party.includes(signaturePokemon)) {
+    party.unshift(signaturePokemon);
+  }
+
+  gameState = 'party';
+  render();
+}
+
+function togglePartyMember(pokemon) {
+  if (party.includes(pokemon)) {
+    // Cannot remove signature Pokemon
+    if (pokemon === signaturePokemon) return;
+    party = party.filter(p => p !== pokemon);
+    partyPoints += 1;
+  } else {
+    if (partyPoints <= 0) return; // No points left
+    party.push(pokemon);
+    partyPoints -= 1;
+  }
+
   render();
 }
 
@@ -361,6 +390,7 @@ function render() {
         ` : `
           <button class="btn-red" onclick="startBattle(currentBattle)">Start Run (Battle ${currentBattle + 1}/${battleSequence.length})</button>
           <button class="btn-purple" onclick="gameState = 'skillTree'; render();">🏆 Skill Tree</button>
+          <button class="btn-blue" onclick="openPartyScreen()">Manage Party</button>
           <div class="caught-pokemon">
             <h3>Caught Pokemon: ${caughtPokemon.length}</h3>
             <div class="pokemon-list">
@@ -482,7 +512,40 @@ function render() {
         <button class="btn-red" onclick="currentBattle = 0; gameState = 'menu'; render();">Return to Menu</button>
       </div>
     `;
-  }
+  } else if (gameState === 'party') {
+  const available = caughtPokemon.slice().filter(p => p !== signaturePokemon);
+  
+  app.innerHTML = `
+    <div class="card">
+      <h2>Party Setup</h2>
+      <p>Signature Pokémon must be in your party.</p>
+      <p>Points left: <strong>${partyPoints}</strong> (Each Pokémon costs 1 point, max 10)</p>
+
+      <h3>Your Party:</h3>
+      <div class="party-list">
+        ${party.map(p => `
+          <div class="partyMon" onclick="togglePartyMember(caughtPokemon.find(x => x.id === ${p.id}) || ${p.name})">
+            <img src="${p.sprite}" alt="${p.name}">
+            <span>${p.name}${p === signaturePokemon ? ' ⭐' : ''}</span>
+          </div>
+        `).join('')}
+      </div>
+
+      <h3>Available Pokémon:</h3>
+      <div class="party-list">
+        ${available.map(p => `
+          <div class="partyMon" onclick="togglePartyMember(caughtPokemon.find(x => x.id === ${p.id}) || ${p.name})">
+            <img src="${p.sprite}" alt="${p.name}">
+            <span>${p.name}</span>
+          </div>
+        `).join('')}
+      </div>
+
+      <button class="btn-green" onclick="gameState='menu'; render();">Back to Menu</button>
+    </div>
+  `;
 }
+
+} 
 
 render();
